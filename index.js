@@ -61,6 +61,36 @@ app.post("/report-phish", async (req, res) => {
   }
 });
 
+app.get("/metrics", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COUNT(*) AS total_reports,
+        AVG(time_to_report_seconds) AS avg_time,
+        MIN(time_to_report_seconds) AS fastest,
+        MAX(time_to_report_seconds) AS slowest
+      FROM reports
+    `);
+
+    const row = result.rows[0];
+
+    res.json({
+      totalReports: Number(row.total_reports),
+      averageTimeToReportSeconds: row.avg_time
+        ? Math.round(Number(row.avg_time))
+        : null,
+      fastestReportSeconds: row.fastest,
+      slowestReportSeconds: row.slowest
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Failed to retrieve metrics"
+    });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
